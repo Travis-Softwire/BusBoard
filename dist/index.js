@@ -18,14 +18,31 @@ const readlineSync = require('readline-sync');
 main();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const input = readlineSync.question('Please enter the bus stop code: ');
-        const response = yield nodeFetch(`https://api.tfl.gov.uk/StopPoint/${input}/Arrivals`);
+        const input = readlineSync.question('Please enter your post code: ');
+        // get long lat
+        const longLatResponse = yield nodeFetch(`https://api.postcodes.io/postcodes/${input}`);
+        const longLatData = yield longLatResponse.json();
+        // get stop point near the postcode
+        const stopPointResponse = yield nodeFetch(` https://api.tfl.gov.uk/StopPoint?stopTypes=NaptanPublicBusCoachTram&modes=bus&lat=${longLatData.result.latitude}&lon=${longLatData.result.longitude}`);
+        const stopPointData = yield stopPointResponse.json();
+        const stopPoints = stopPointData.stopPoints.sort((a, b) => a.distance < b.distance ? 1 : -1).slice(0, 2);
+        //
+        yield stopPoints.forEach((stopPoint) => __awaiter(this, void 0, void 0, function* () {
+            const buses = yield GetNextBusesForStop(stopPoint.naptanId);
+            console.log(`Bus stop name: ${stopPoint.commonName} (${stopPoint.indicator}): `);
+            buses.forEach((bus) => {
+                console.log(bus.toString());
+            });
+        }));
+        console.log("Main ends");
+    });
+}
+function GetNextBusesForStop(stopId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield nodeFetch(`https://api.tfl.gov.uk/StopPoint/${stopId}/Arrivals`);
         const data = yield response.json();
         const parser = new ArrivalsParser_1.default();
-        const buses = parser.GetBusesFromJSON(data).slice(0, 5);
-        buses.forEach((bus) => {
-            console.log(bus.toString());
-        });
+        return parser.GetBusesFromJSON(data).slice(0, 5);
     });
 }
 //# sourceMappingURL=index.js.map

@@ -1,4 +1,4 @@
-export default interface ArrivalDataFormat {
+export default interface ArrivalResponseFormat {
     lineName: string
     expectedArrival: string
 }
