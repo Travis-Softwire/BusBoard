@@ -18,11 +18,14 @@ const readlineSync = require('readline-sync');
 main();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const response = yield nodeFetch('https://api.tfl.gov.uk/StopPoint/490008660N/Arrivals');
+        const input = readlineSync.question('Please enter the bus stop code: ');
+        const response = yield nodeFetch(`https://api.tfl.gov.uk/StopPoint/${input}/Arrivals`);
         const data = yield response.json();
         const parser = new ArrivalsParser_1.default();
         const buses = parser.GetBusesFromJSON(data).slice(0, 5);
-        console.log(buses);
+        buses.forEach((bus) => {
+            console.log(bus.toString());
+        });
     });
 }
 //# sourceMappingURL=index.js.map
