@@ -20,10 +20,14 @@ const app = express();
 main();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        app.get('/postcode=:postcode', function (req, res) {
+        app.get('/:postcode', function (req, res) {
             return __awaiter(this, void 0, void 0, function* () {
-                // localhost:3000/postcode=TW118RS
-                res.send(yield printArrivalsAtNearestBusStops(req.params.postcode));
+                try {
+                    res.send(yield printArrivalsAtNearestBusStops(req.params.postcode));
+                }
+                catch (e) {
+                    res.status(404).send(e.message);
+                }
             });
         });
         app.listen(3000);
@@ -34,14 +38,21 @@ function printArrivalsAtNearestBusStops(input) {
         // get long lat
         const longLatResponse = yield nodeFetch(`https://api.postcodes.io/postcodes/${input}`);
         const longLatData = yield longLatResponse.json();
+        if (longLatData.status !== 200) {
+            throw new Error(`Postcode not found`);
+        }
         // get stop point near the postcode
         const stopPointResponse = yield nodeFetch(` https://api.tfl.gov.uk/StopPoint?stopTypes=NaptanPublicBusCoachTram&modes=bus&lat=${longLatData.result.latitude}&lon=${longLatData.result.longitude}`);
         const stopPointData = yield stopPointResponse.json();
         const stopPoints = stopPointData.stopPoints.sort((a, b) => a.distance < b.distance ? 1 : -1).slice(0, 2);
+        if (stopPoints.length === 0) {
+            throw new Error(`No bus stops found`);
+        }
         const busStops = stopPoints.map((stopPoint) => (new BusStop_1.default(stopPoint.naptanId, stopPoint.indicator, stopPoint.commonName)));
         const busStopPromises = busStops.map((busStop) => __awaiter(this, void 0, void 0, function* () { return yield busStop.updateArrivals(); }));
         yield Promise.all(busStopPromises);
-        return busStops.map(busStop => busStop.toString()).join();
+        // return busStops.map(busStop => busStop.toString()).join();
+        return JSON.stringify(busStops);
         /*
         await Promise.all(busStops.map(async (busStop: BusStop): Promise<void> => {
             await busStop.updateArrivals();
