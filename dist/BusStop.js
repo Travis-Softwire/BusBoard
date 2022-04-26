@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const ArrivalsParser_1 = __importDefault(require("./ArrivalsParser"));
-const nodeFetch = require('node-fetch');
+const node_fetch_1 = __importDefault(require("node-fetch"));
 class BusStop {
     constructor(id, indicator, name) {
         this.arrivals = [];
@@ -23,10 +23,11 @@ class BusStop {
     }
     updateArrivals() {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield nodeFetch(`https://api.tfl.gov.uk/StopPoint/${this.id}/Arrivals`);
+            const response = yield (0, node_fetch_1.default)(`https://api.tfl.gov.uk/StopPoint/${this.id}/Arrivals`);
             const data = yield response.json();
             const parser = new ArrivalsParser_1.default();
-            this.arrivals = parser.GetBusesFromJSON(data).slice(0, 5);
+            const arrivals = parser.GetBusesFromJSON(data).slice(0, 5);
+            this.arrivals = arrivals;
         });
     }
     toString() {

@@ -1,7 +1,7 @@
 import Bus from "./Bus";
 import ArrivalResponseFormat from "./ArrivalDataFormat";
 import ArrivalsParser from "./ArrivalsParser";
-const nodeFetch = require('node-fetch');
+import nodeFetch from "node-fetch";
 
 export default class BusStop {
     private arrivals: Bus[] = [];
@@ -16,10 +16,11 @@ export default class BusStop {
     }
 
     async updateArrivals(): Promise<void> {
-        const response: any = await nodeFetch(`https://api.tfl.gov.uk/StopPoint/${this.id}/Arrivals`);
+        const response = await nodeFetch(`https://api.tfl.gov.uk/StopPoint/${this.id}/Arrivals`);
         const data: ArrivalResponseFormat[] = await response.json() as ArrivalResponseFormat[];
         const parser: ArrivalsParser = new ArrivalsParser();
-        this.arrivals = parser.GetBusesFromJSON(data).slice(0, 5);
+        const arrivals = parser.GetBusesFromJSON(data).slice(0, 5);
+        this.arrivals = arrivals;
     }
 
     toString(){

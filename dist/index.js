@@ -13,14 +13,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const BusStop_1 = __importDefault(require("./BusStop"));
-const nodeFetch = require('node-fetch');
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const readlineSync = require('readline-sync');
 const express = require('express');
 const app = express();
 main();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        app.get('/departureboards', function (req, res) {
+        app.use(express.static('frontend'));
+        app.use('/catsOnBuses', express.static('frontend/catsOnBuses.html'));
+        app.get('/departureBoards', function (req, res) {
             return __awaiter(this, void 0, void 0, function* () {
                 //localhost:3000/departureboards?postcode=TW118RS
                 try {
@@ -37,13 +39,13 @@ function main() {
 function printArrivalsAtNearestBusStops(input) {
     return __awaiter(this, void 0, void 0, function* () {
         // get long lat
-        const longLatResponse = yield nodeFetch(`https://api.postcodes.io/postcodes/${input}`);
+        const longLatResponse = yield (0, node_fetch_1.default)(`https://api.postcodes.io/postcodes/${input}`);
         const longLatData = yield longLatResponse.json();
         if (longLatData.status !== 200) {
             throw new Error(`Postcode not found`);
         }
         // get stop point near the postcode
-        const stopPointResponse = yield nodeFetch(` https://api.tfl.gov.uk/StopPoint?stopTypes=NaptanPublicBusCoachTram&modes=bus&lat=${longLatData.result.latitude}&lon=${longLatData.result.longitude}`);
+        const stopPointResponse = yield (0, node_fetch_1.default)(` https://api.tfl.gov.uk/StopPoint?stopTypes=NaptanPublicBusCoachTram&modes=bus&lat=${longLatData.result.latitude}&lon=${longLatData.result.longitude}`);
         const stopPointData = yield stopPointResponse.json();
         const stopPoints = stopPointData.stopPoints.sort((a, b) => a.distance < b.distance ? 1 : -1).slice(0, 2);
         if (stopPoints.length === 0) {
@@ -52,14 +54,7 @@ function printArrivalsAtNearestBusStops(input) {
         const busStops = stopPoints.map((stopPoint) => (new BusStop_1.default(stopPoint.naptanId, stopPoint.indicator, stopPoint.commonName)));
         const busStopPromises = busStops.map((busStop) => __awaiter(this, void 0, void 0, function* () { return yield busStop.updateArrivals(); }));
         yield Promise.all(busStopPromises);
-        // return busStops.map(busStop => busStop.toString()).join();
         return JSON.stringify(busStops);
-        /*
-        await Promise.all(busStops.map(async (busStop: BusStop): Promise<void> => {
-            await busStop.updateArrivals();
-            console.log(busStop.toString());
-        }));
-        */
     });
 }
 //# sourceMappingURL=index.js.map
