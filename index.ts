@@ -15,9 +15,10 @@ const app = express();
 main();
 
 async function main() {
-    app.get('/:postcode', async function (req: Request, res: Response) {
+    app.get('/departureboards', async function (req: Request, res: Response) {
+        //localhost:3000/departureboards?postcode=TW118RS
         try {
-            res.send(await printArrivalsAtNearestBusStops(req.params.postcode));
+            res.send(await printArrivalsAtNearestBusStops(req.query.postcode as string));
         } catch (e: any) {
             res.status(404).send(e.message)
         }

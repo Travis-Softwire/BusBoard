@@ -20,10 +20,11 @@ const app = express();
 main();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        app.get('/:postcode', function (req, res) {
+        app.get('/departureboards', function (req, res) {
             return __awaiter(this, void 0, void 0, function* () {
+                //localhost:3000/departureboards?postcode=TW118RS
                 try {
-                    res.send(yield printArrivalsAtNearestBusStops(req.params.postcode));
+                    res.send(yield printArrivalsAtNearestBusStops(req.query.postcode));
                 }
                 catch (e) {
                     res.status(404).send(e.message);
