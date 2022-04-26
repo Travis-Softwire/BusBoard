@@ -30,7 +30,7 @@ class BusStop {
         });
     }
     toString() {
-        return `${this.name} (${this.indicator}): \n` + this.arrivals.map((bus) => bus.toString()).join('\n');
+        return `${this.name} (${this.indicator}): \n` + this.arrivals.map((bus) => bus.toString()).join('\n') + '\n';
     }
 }
 exports.default = BusStop;

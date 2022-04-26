@@ -4,14 +4,25 @@ import ArrivalsParser from "./ArrivalsParser";
 import LongLatResponseFormat from "./LongLatResponseFormat";
 import StopPointResponseFormat, { StopPoint } from "./StopPointResponseFormat";
 import BusStop from "./BusStop";
+import {Request, Response} from "express";
 const nodeFetch = require('node-fetch');
 const readlineSync = require('readline-sync');
+
+const express = require('express')
+const app = express();
+
 
 main();
 
 async function main() {
-    const input = readlineSync.question('Please enter your post code: ');
+    app.get('/:postcode', async function (req: Request, res: Response) {
+        res.send(await printArrivalsAtNearestBusStops(req.params.postcode));
+    });
 
+    app.listen(3000)
+}
+
+async function printArrivalsAtNearestBusStops(input: string): Promise<string>{
     // get long lat
     const longLatResponse: any = await nodeFetch(`https://api.postcodes.io/postcodes/${input}`);
     const longLatData: LongLatResponseFormat = await longLatResponse.json() as LongLatResponseFormat;
@@ -25,8 +36,8 @@ async function main() {
     const busStops: BusStop[] = stopPoints.map((stopPoint: StopPoint) => ( new BusStop(stopPoint.naptanId, stopPoint.indicator, stopPoint.commonName)));
     const busStopPromises: Promise<void>[] = busStops.map(async (busStop: BusStop): Promise<void> => await busStop.updateArrivals());
     await Promise.all(busStopPromises);
-    busStops.forEach((busStop => console.log(busStop.toString())));
-    
+    return busStops.map(busStop => busStop.toString()).join();
+
 
     /*
     await Promise.all(busStops.map(async (busStop: BusStop): Promise<void> => {
@@ -34,9 +45,6 @@ async function main() {
         console.log(busStop.toString());
     }));
     */
-
-    console.log("Main ends here");
 }
-
 
 

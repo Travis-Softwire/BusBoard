@@ -15,10 +15,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const BusStop_1 = __importDefault(require("./BusStop"));
 const nodeFetch = require('node-fetch');
 const readlineSync = require('readline-sync');
+const express = require('express');
+const app = express();
 main();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const input = readlineSync.question('Please enter your post code: ');
+        app.get('/postcode=:postcode', function (req, res) {
+            return __awaiter(this, void 0, void 0, function* () {
+                // localhost:3000/postcode=TW118RS
+                res.send(yield printArrivalsAtNearestBusStops(req.params.postcode));
+            });
+        });
+        app.listen(3000);
+    });
+}
+function printArrivalsAtNearestBusStops(input) {
+    return __awaiter(this, void 0, void 0, function* () {
         // get long lat
         const longLatResponse = yield nodeFetch(`https://api.postcodes.io/postcodes/${input}`);
         const longLatData = yield longLatResponse.json();
@@ -26,18 +38,16 @@ function main() {
         const stopPointResponse = yield nodeFetch(` https://api.tfl.gov.uk/StopPoint?stopTypes=NaptanPublicBusCoachTram&modes=bus&lat=${longLatData.result.latitude}&lon=${longLatData.result.longitude}`);
         const stopPointData = yield stopPointResponse.json();
         const stopPoints = stopPointData.stopPoints.sort((a, b) => a.distance < b.distance ? 1 : -1).slice(0, 2);
-        let busStops = stopPoints.map((stopPoint) => (new BusStop_1.default(stopPoint.naptanId, stopPoint.indicator, stopPoint.commonName)));
+        const busStops = stopPoints.map((stopPoint) => (new BusStop_1.default(stopPoint.naptanId, stopPoint.indicator, stopPoint.commonName)));
+        const busStopPromises = busStops.map((busStop) => __awaiter(this, void 0, void 0, function* () { return yield busStop.updateArrivals(); }));
+        yield Promise.all(busStopPromises);
+        return busStops.map(busStop => busStop.toString()).join();
         /*
-        const busStopPromises: Promise<void>[] = busStops.map(async (busStop: BusStop): Promise<void> => await busStop.updateArrivals());
-    
-        await Promise.all(busStopPromises);
-        busStops.forEach((busStop => console.log(busStop.toString())));
-        */
-        yield Promise.all(busStops.map((busStop) => __awaiter(this, void 0, void 0, function* () {
-            yield busStop.updateArrivals();
+        await Promise.all(busStops.map(async (busStop: BusStop): Promise<void> => {
+            await busStop.updateArrivals();
             console.log(busStop.toString());
-        })));
-        console.log("Main ends here");
+        }));
+        */
     });
 }
 //# sourceMappingURL=index.js.map
