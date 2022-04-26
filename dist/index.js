@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ArrivalsParser_1 = __importDefault(require("./ArrivalsParser"));
+const BusStop_1 = __importDefault(require("./BusStop"));
 const nodeFetch = require('node-fetch');
 const readlineSync = require('readline-sync');
 main();
@@ -26,23 +26,18 @@ function main() {
         const stopPointResponse = yield nodeFetch(` https://api.tfl.gov.uk/StopPoint?stopTypes=NaptanPublicBusCoachTram&modes=bus&lat=${longLatData.result.latitude}&lon=${longLatData.result.longitude}`);
         const stopPointData = yield stopPointResponse.json();
         const stopPoints = stopPointData.stopPoints.sort((a, b) => a.distance < b.distance ? 1 : -1).slice(0, 2);
-        //
-        yield stopPoints.forEach((stopPoint) => __awaiter(this, void 0, void 0, function* () {
-            const buses = yield GetNextBusesForStop(stopPoint.naptanId);
-            console.log(`Bus stop name: ${stopPoint.commonName} (${stopPoint.indicator}): `);
-            buses.forEach((bus) => {
-                console.log(bus.toString());
-            });
-        }));
-        console.log("Main ends");
-    });
-}
-function GetNextBusesForStop(stopId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const response = yield nodeFetch(`https://api.tfl.gov.uk/StopPoint/${stopId}/Arrivals`);
-        const data = yield response.json();
-        const parser = new ArrivalsParser_1.default();
-        return parser.GetBusesFromJSON(data).slice(0, 5);
+        let busStops = stopPoints.map((stopPoint) => (new BusStop_1.default(stopPoint.naptanId, stopPoint.indicator, stopPoint.commonName)));
+        /*
+        const busStopPromises: Promise<void>[] = busStops.map(async (busStop: BusStop): Promise<void> => await busStop.updateArrivals());
+    
+        await Promise.all(busStopPromises);
+        busStops.forEach((busStop => console.log(busStop.toString())));
+        */
+        yield Promise.all(busStops.map((busStop) => __awaiter(this, void 0, void 0, function* () {
+            yield busStop.updateArrivals();
+            console.log(busStop.toString());
+        })));
+        console.log("Main ends here");
     });
 }
 //# sourceMappingURL=index.js.map

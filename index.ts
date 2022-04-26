@@ -3,6 +3,7 @@ import ArrivalResponseFormat from "./ArrivalDataFormat";
 import ArrivalsParser from "./ArrivalsParser";
 import LongLatResponseFormat from "./LongLatResponseFormat";
 import StopPointResponseFormat, { StopPoint } from "./StopPointResponseFormat";
+import BusStop from "./BusStop";
 const nodeFetch = require('node-fetch');
 const readlineSync = require('readline-sync');
 
@@ -19,21 +20,23 @@ async function main() {
     const stopPointResponse: any = await nodeFetch(` https://api.tfl.gov.uk/StopPoint?stopTypes=NaptanPublicBusCoachTram&modes=bus&lat=${longLatData.result.latitude}&lon=${longLatData.result.longitude}`);
     const stopPointData: StopPointResponseFormat = await stopPointResponse.json() as StopPointResponseFormat;
     const stopPoints: StopPoint[] = stopPointData.stopPoints.sort((a, b) => a.distance < b.distance ? 1 : -1).slice(0, 2);
-    //
-    stopPoints.forEach(async (stopPoint: StopPoint) => {
-        const buses = await GetNextBusesForStop(stopPoint.naptanId);
-        console.log(`Bus stop name: ${stopPoint.commonName} (${stopPoint.indicator}): `);
-        buses.forEach((bus: Bus) => {
-            console.log(bus.toString());
-        });
-    });
-    console.log("Main ends");
+
+
+    const busStops: BusStop[] = stopPoints.map((stopPoint: StopPoint) => ( new BusStop(stopPoint.naptanId, stopPoint.indicator, stopPoint.commonName)));
+    const busStopPromises: Promise<void>[] = busStops.map(async (busStop: BusStop): Promise<void> => await busStop.updateArrivals());
+    await Promise.all(busStopPromises);
+    busStops.forEach((busStop => console.log(busStop.toString())));
+    
+
+    /*
+    await Promise.all(busStops.map(async (busStop: BusStop): Promise<void> => {
+        await busStop.updateArrivals();
+        console.log(busStop.toString());
+    }));
+    */
+
+    console.log("Main ends here");
 }
 
-async function GetNextBusesForStop(stopId: string): Promise<Bus[]> {
-    const response: any = await nodeFetch(`https://api.tfl.gov.uk/StopPoint/${stopId}/Arrivals`);
-    const data: ArrivalResponseFormat[] = await response.json() as ArrivalResponseFormat[];
-    const parser: ArrivalsParser = new ArrivalsParser();
-    return parser.GetBusesFromJSON(data).slice(0, 5);
-}
+
 
